@@ -55,7 +55,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; /* so that mouse moves are captured by the container */
+      pointer-events: none; /* so that touch/mouse events fall through to container */
     }
     /* Common styles for each half */
     .half {
@@ -111,7 +111,7 @@
       const totalSteps = 5;
       const finalGender = 'female'; // Set to 'male' for a boy reveal.
       let step = 0;
-      let splitTriggered = false;  // Prevents re-triggering while an animation is underway
+      let splitTriggered = false;  // Prevent re-triggering while animation is underway
 
       // Messages for each step.
       const messages = [
@@ -122,7 +122,7 @@
         "Guess what? I am a...",
         null  // Final message set based on finalGender.
       ];
-      messages[5] = (finalGender === 'male') ? "BOY" : "GIRL";
+      messages[5] = (finalGender === 'male') ? "A BOY" : "A GIRL";
 
       // Helper: get envelope image based on step.
       function getEnvelopeImage(s) {
@@ -213,14 +213,27 @@
         }, 300);
       }
 
-      // When the mouse moves over the container, if it crosses 70% of the container's width, trigger the split.
-      container.addEventListener("mousemove", (e) => {
+      // Unified movement handler for both mouse and touch events.
+      function handleMovement(e) {
+        let clientX;
+        // Check for touch event (which uses a TouchList) or fallback to mouse event.
+        if (e.touches && e.touches.length > 0) {
+          clientX = e.touches[0].clientX;
+        } else {
+          clientX = e.clientX;
+        }
         const rect = container.getBoundingClientRect();
-        const relativeX = e.clientX - rect.left;
+        const relativeX = clientX - rect.left;
+        // If the user moves beyond 70% of the container's width, trigger the split.
         if (relativeX > rect.width * 0.7) {
           triggerSplit();
         }
-      });
+      }
+
+      // Listen for both mousemove and touchmove events.
+      container.addEventListener("mousemove", handleMovement);
+      container.addEventListener("touchmove", handleMovement, { passive: false });
+      
     })();
   </script>
 </body>
