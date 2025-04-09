@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive Baby Gender Reveal – Split Reveal</title>
+  <!-- Google Font for fun styling -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti CDN for celebration effect -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    /* Page Background & Font */
+    body {
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      font-family: 'Fredoka One', cursive;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      color: #333;
+    }
+    /* Wrapper centers our content */
+    .wrapper {
+      text-align: center;
+    }
+    /* Message displayed above the envelope */
+    #text-display {
+      font-size: 36px;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    /* Envelope container (width fixed, height set dynamically) */
+    .container {
+      position: relative;
+      width: 400px;
+      margin: auto;
+    }
+    /* Underlying envelope image fills container while preserving aspect ratio */
+    .underlying {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    /* Top envelope wrapper holding the split halves */
+    .top-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* so that mouse moves are captured by the container */
+    }
+    /* Common styles for each half */
+    .half {
+      position: absolute;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+    /* Left half positioned on the left */
+    .left {
+      left: 0;
+      background-position: left center;
+    }
+    /* Right half positioned on the right */
+    .right {
+      right: 0;
+      background-position: right center;
+    }
+    /* Bounce animation for final reveal */
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      60% { transform: translateY(-10px); }
+    }
+    .bounce {
+      animation: bounce 1s;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Displayed message text above the envelope -->
+    <div id="text-display">Hi uncle Saif</div>
+    <!-- Envelope container -->
+    <div class="container" id="container">
+      <!-- Underlying envelope image (revealed when the top splits) -->
+      <img id="underlying" class="underlying" src="black-envelope.png" alt="Underlying Envelope">
+      <!-- Top envelope split into two halves -->
+      <div class="top-wrapper" id="top-wrapper">
+        <div id="left-half" class="half left"></div>
+        <div id="right-half" class="half right"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    (function() {
+      // Total steps: step 0 is initial; final step is 5.
+      const totalSteps = 5;
+      const finalGender = 'female'; // Set to 'male' for a boy reveal.
+      let step = 0;
+      let splitTriggered = false;  // Prevents re-triggering while an animation is underway
+
+      // Messages for each step.
+      const messages = [
+        "Hi uncle Saif",
+        "Am I a boy?",
+        "Am I a girl?",
+        "What do you think?",
+        "Guess what? I am a...",
+        null  // Final message set based on finalGender.
+      ];
+      messages[5] = (finalGender === 'male') ? "BOY" : "GIRL";
+
+      // Helper: get envelope image based on step.
+      function getEnvelopeImage(s) {
+        if (s === 0) return "black-envelope.png";
+        else if (s < totalSteps) {
+          // Alternate images: odd steps = blue, even steps = pink.
+          return (s % 2 === 1) ? "blue-envelope.png" : "pink-envelope.png";
+        } else {
+          // Final reveal based on gender.
+          return (finalGender === 'male') ? "blue-envelope.png" : "pink-envelope.png";
+        }
+      }
+
+      // Elements
+      const container = document.getElementById("container");
+      const textDisplay = document.getElementById("text-display");
+      const underlying = document.getElementById("underlying");
+      const leftHalf = document.getElementById("left-half");
+      const rightHalf = document.getElementById("right-half");
+      const topWrapper = document.getElementById("top-wrapper");
+
+      // Update top envelope halves with the current envelope image.
+      function updateTopHalvesImage(imgUrl) {
+        leftHalf.style.backgroundImage = `url('${imgUrl}')`;
+        rightHalf.style.backgroundImage = `url('${imgUrl}')`;
+      }
+
+      // Set initial images.
+      updateTopHalvesImage(getEnvelopeImage(0));
+      // Set underlying image for the next step.
+      underlying.src = getEnvelopeImage(1);
+
+      // When underlying image loads, adjust container height to match its natural height.
+      underlying.addEventListener('load', function() {
+        container.style.height = underlying.offsetHeight + "px";
+      });
+
+      // Update displayed text.
+      function updateText(message) {
+        textDisplay.textContent = message;
+      }
+      updateText(messages[0]);
+
+      // Trigger the split animation.
+      function triggerSplit() {
+        if (splitTriggered || step >= totalSteps) return;
+        splitTriggered = true;
+        // Animate: slide left half to left, right half to right and fade out.
+        leftHalf.style.transform = "translateX(-150%)";
+        rightHalf.style.transform = "translateX(150%)";
+        leftHalf.style.opacity = "0";
+        rightHalf.style.opacity = "0";
+        
+        // After animation finishes, update state.
+        setTimeout(() => {
+          step++;
+          updateText(messages[step]);
+
+          if (step < totalSteps) {
+            // The underlying envelope becomes the new top envelope.
+            updateTopHalvesImage(getEnvelopeImage(step));
+            // Preload next envelope beneath.
+            underlying.src = getEnvelopeImage(step + 1);
+          } else {
+            // Final reveal: update to final envelope.
+            updateTopHalvesImage(getEnvelopeImage(step));
+            topWrapper.classList.add("bounce");
+            // Launch confetti!
+            confetti({
+              particleCount: 150,
+              spread: 80,
+              origin: { y: 0.6 }
+            });
+          }
+
+          // Reset the halves back to starting position.
+          leftHalf.style.transition = "none";
+          rightHalf.style.transition = "none";
+          leftHalf.style.transform = "translateX(0)";
+          rightHalf.style.transform = "translateX(0)";
+          leftHalf.style.opacity = "1";
+          rightHalf.style.opacity = "1";
+          // Force reflow to reapply transitions.
+          void leftHalf.offsetWidth;
+          leftHalf.style.transition = "transform 0.3s ease-out, opacity 0.3s ease-out";
+          rightHalf.style.transition = "transform 0.3s ease-out, opacity 0.3s ease-out";
+          splitTriggered = false;
+        }, 300);
+      }
+
+      // When the mouse moves over the container, if it crosses 70% of the container's width, trigger the split.
+      container.addEventListener("mousemove", (e) => {
+        const rect = container.getBoundingClientRect();
+        const relativeX = e.clientX - rect.left;
+        if (relativeX > rect.width * 0.7) {
+          triggerSplit();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
